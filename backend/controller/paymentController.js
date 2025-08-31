@@ -55,7 +55,7 @@ export const checkout = async (req, res) => {
         },
       ],
       // IMPORTANT: go back to backend first so we can save the appointment, then redirect to frontend
-      success_url: `${BACKEND_URL}/api/v1/payment/success?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${FRONTEND_URL}/api/v1/payment/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${FRONTEND_URL}/appointment`,
       metadata: {
         firstName,
@@ -143,8 +143,7 @@ export const paymentSuccess = async (req, res) => {
     console.log("📝 Creating appointment:", appointmentDoc);
     await Appointment.create(appointmentDoc);
 
-    // Redirect to frontend My Appointments
-    return res.redirect(`${FRONTEND_URL}/myappointments?paid=true`);
+    return res.status(200).json({ success: true, message: "Appointment saved" });
   } catch (error) {
     console.error("Payment success error:", error);
     return res
