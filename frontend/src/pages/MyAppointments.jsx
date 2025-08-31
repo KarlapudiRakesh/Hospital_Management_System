@@ -21,16 +21,6 @@ const MyAppointments = () => {
     fetchAppointments();
   }, []);
 
-  // look for ?status=success (backend redirects here after saving)
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const status = params.get("status");
-    if (status === "success") {
-      fetchAppointments();
-      window.history.replaceState({}, document.title, "/myappointments");
-    }
-  }, []);
-
   return (
     <div className="myappointments">
       <div className="banner">

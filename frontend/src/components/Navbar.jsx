@@ -7,21 +7,22 @@ import { Context } from "../main";
 
 const Navbar = () => {
   const [show, setShow] = useState(false);
-  const { isAuthenticated, setIsAuthenticated } = useContext(Context);
+  const { isAuthenticated, setIsAuthenticated, setUser } = useContext(Context);
 
   const handleLogout = async () => {
-    await axios
-      .get(`${import.meta.env.VITE_BACKEND_URL}/api/v1/user/patient/logout`, {
-        withCredentials: true,
-      })
-      .then((res) => {
-        toast.success(res.data.message);
-        setIsAuthenticated(false);
-      })
-      .catch((err) => {
-        toast.error(err.response.data.message);
-      });
-  };
+  await axios
+    .get(`${import.meta.env.VITE_BACKEND_URL}/api/v1/user/patient/logout`, {
+      withCredentials: true,
+    })
+    .then((res) => {
+      toast.success(res.data.message);
+      setIsAuthenticated(false);
+      setUser({});
+    })
+    .catch((err) => {
+      toast.error(err.response?.data?.message || "Logout failed");
+    });
+};
 
   const navigateTo = useNavigate();
 

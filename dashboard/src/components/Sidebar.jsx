@@ -14,21 +14,23 @@ import { useNavigate } from "react-router-dom";
 const Sidebar = () => {
   const [show, setShow] = useState(false);
 
-  const { isAuthenticated, setIsAuthenticated } = useContext(Context);
+  const { isAuthenticated, setIsAuthenticated, setUser } = useContext(Context);
 
-  const handleLogout = async () => {
-    await axios
-      .get(`${import.meta.env.VITE_BACKEND_URL}/api/v1/user/admin/logout`, {
-        withCredentials: true,
-      })
-      .then((res) => {
-        toast.success(res.data.message);
-        setIsAuthenticated(false);
-      })
-      .catch((err) => {
-        toast.error(err.response.data.message);
-      });
-  };
+const handleLogout = async () => {
+  await axios
+    .get(`${import.meta.env.VITE_BACKEND_URL}/api/v1/user/admin/logout`, {
+      withCredentials: true,
+    })
+    .then((res) => {
+      toast.success(res.data.message);
+      setIsAuthenticated(false);
+      setUser({});
+      navigateTo("/login");
+    })
+    .catch((err) => {
+      toast.error(err.response?.data?.message || "Logout failed");
+    });
+};
 
   const navigateTo = useNavigate();
 

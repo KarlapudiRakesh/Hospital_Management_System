@@ -1,3 +1,4 @@
+// backend/controller/paymentController.js
 import Stripe from "stripe";
 import { config } from "dotenv";
 import { Appointment } from "../models/appointmentSchema.js";
@@ -7,7 +8,7 @@ config({ path: "./config/config.env" });
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-// defaults if envs missing (keep these as you had)
+// Fallbacks for local dev if envs missing
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 const BACKEND_URL  = process.env.BACKEND_URL  || "http://localhost:4000";
 
@@ -26,7 +27,7 @@ export const checkout = async (req, res) => {
       address,
       doctorId,
       patientId,
-      // optional (not required)
+      // optional (we’ll still resolve from DB)
       doctor_firstName,
       doctor_lastName,
     } = req.body;
@@ -52,7 +53,7 @@ export const checkout = async (req, res) => {
           quantity: 1,
         },
       ],
-      // ⬇️ Stripe → backend first (save), then redirect to frontend
+      // ⬇️ IMPORTANT: Hit backend first so we can save, then backend redirects to frontend
       success_url: `${BACKEND_URL}/api/v1/payment/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${FRONTEND_URL}/appointment`,
       metadata: {
@@ -75,9 +76,7 @@ export const checkout = async (req, res) => {
     return res.status(200).json({ id: session.id, url: session.url });
   } catch (error) {
     console.error("Checkout error:", error);
-    return res
-      .status(500)
-      .json({ message: "Checkout failed", error: error.message });
+    return res.status(500).json({ message: "Checkout failed", error: error.message });
   }
 };
 
@@ -97,7 +96,7 @@ export const paymentSuccess = async (req, res) => {
     const m = session.metadata || {};
     console.log("✅ Stripe metadata:", m);
 
-    // resolve doctor name (schema requires doctor.firstName/lastName)
+    // Resolve doctor names (schema requires doctor.firstName/lastName)
     let doctorFirstName = "";
     let doctorLastName = "";
 
@@ -105,7 +104,7 @@ export const paymentSuccess = async (req, res) => {
       const doctor = await User.findById(m.doctorId).select("firstName lastName");
       if (doctor) {
         doctorFirstName = doctor.firstName || "";
-        doctorLastName  = doctor.lastName || "";
+        doctorLastName  = doctor.lastName  || "";
       }
     }
     if (!doctorFirstName && m.doctor_firstName) doctorFirstName = m.doctor_firstName;
@@ -138,12 +137,10 @@ export const paymentSuccess = async (req, res) => {
     console.log("📝 Creating appointment:", appointmentDoc);
     await Appointment.create(appointmentDoc);
 
-    // ⬇️ send the browser to your frontend page
+    // ⬇️ Final redirect to your SPA page
     return res.redirect(`${FRONTEND_URL}/myappointments?status=success`);
   } catch (error) {
     console.error("Payment success error:", error);
-    return res
-      .status(500)
-      .json({ message: "Payment success handling failed", error });
+    return res.status(500).json({ message: "Payment success handling failed", error });
   }
 };
