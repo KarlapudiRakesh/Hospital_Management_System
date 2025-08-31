@@ -1,4 +1,3 @@
-// backend/controller/paymentController.js
 import Stripe from "stripe";
 import { config } from "dotenv";
 import { Appointment } from "../models/appointmentSchema.js";
@@ -8,7 +7,7 @@ config({ path: "./config/config.env" });
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-// Helpful defaults if envs are missing
+// defaults if envs missing (keep these as you had)
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 const BACKEND_URL  = process.env.BACKEND_URL  || "http://localhost:4000";
 
@@ -27,8 +26,7 @@ export const checkout = async (req, res) => {
       address,
       doctorId,
       patientId,
-
-      // optional (not required; we still store via DB lookup)
+      // optional (not required)
       doctor_firstName,
       doctor_lastName,
     } = req.body;
@@ -54,7 +52,7 @@ export const checkout = async (req, res) => {
           quantity: 1,
         },
       ],
-      // IMPORTANT: go back to backend first so we can save the appointment, then redirect to frontend
+      // ⬇️ Stripe → backend first (save), then redirect to frontend
       success_url: `${BACKEND_URL}/api/v1/payment/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${FRONTEND_URL}/appointment`,
       metadata: {
@@ -69,7 +67,6 @@ export const checkout = async (req, res) => {
         address,
         doctorId,
         patientId,
-        // optional extras
         ...(doctor_firstName ? { doctor_firstName } : {}),
         ...(doctor_lastName  ? { doctor_lastName  } : {}),
       },
@@ -78,7 +75,9 @@ export const checkout = async (req, res) => {
     return res.status(200).json({ id: session.id, url: session.url });
   } catch (error) {
     console.error("Checkout error:", error);
-    return res.status(500).json({ message: "Checkout failed", error: error.message });
+    return res
+      .status(500)
+      .json({ message: "Checkout failed", error: error.message });
   }
 };
 
@@ -98,7 +97,7 @@ export const paymentSuccess = async (req, res) => {
     const m = session.metadata || {};
     console.log("✅ Stripe metadata:", m);
 
-    // Always try to fetch doctor names from DB using doctorId
+    // resolve doctor name (schema requires doctor.firstName/lastName)
     let doctorFirstName = "";
     let doctorLastName = "";
 
@@ -109,17 +108,13 @@ export const paymentSuccess = async (req, res) => {
         doctorLastName  = doctor.lastName || "";
       }
     }
-
-    // Fallback to metadata if DB not found (handles edge cases)
     if (!doctorFirstName && m.doctor_firstName) doctorFirstName = m.doctor_firstName;
     if (!doctorLastName  && m.doctor_lastName)  doctorLastName  = m.doctor_lastName;
 
     if (!doctorFirstName || !doctorLastName) {
-      // Your schema requires doctor.firstName/lastName -> stop if we couldn't resolve
       return res.status(400).json({ message: "Unable to resolve doctor name." });
     }
 
-    // Build the document exactly as your schema expects (Date fields cast explicitly)
     const appointmentDoc = {
       firstName: m.firstName,
       lastName:  m.lastName,
@@ -143,7 +138,7 @@ export const paymentSuccess = async (req, res) => {
     console.log("📝 Creating appointment:", appointmentDoc);
     await Appointment.create(appointmentDoc);
 
-    // ✅ Redirect to frontend MyAppointments page after saving
+    // ⬇️ send the browser to your frontend page
     return res.redirect(`${FRONTEND_URL}/myappointments?status=success`);
   } catch (error) {
     console.error("Payment success error:", error);

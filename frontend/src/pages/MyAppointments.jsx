@@ -4,7 +4,6 @@ import axios from "axios";
 const MyAppointments = () => {
   const [appointments, setAppointments] = useState([]);
 
-  // fetch appointments
   const fetchAppointments = async () => {
     try {
       const { data } = await axios.get(
@@ -22,11 +21,11 @@ const MyAppointments = () => {
     fetchAppointments();
   }, []);
 
-  // remove ?status=success from URL after redirect
+  // look for ?status=success (backend redirects here after saving)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get("status") === "success") {
-      console.log("✅ Appointment saved after payment");
+    const status = params.get("status");
+    if (status === "success") {
       fetchAppointments();
       window.history.replaceState({}, document.title, "/myappointments");
     }
