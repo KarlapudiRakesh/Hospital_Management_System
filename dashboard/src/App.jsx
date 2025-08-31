@@ -39,7 +39,7 @@ const App= () => {
         }
       };
       fetchUser();
-    }, [isAuthenticated]);
+    }, []);
 
   return (
     <Router>
