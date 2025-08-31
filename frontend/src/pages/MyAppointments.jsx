@@ -4,7 +4,7 @@ import axios from "axios";
 const MyAppointments = () => {
   const [appointments, setAppointments] = useState([]);
 
-  // 🔹 Function to fetch appointments
+  // fetch appointments
   const fetchAppointments = async () => {
     try {
       const { data } = await axios.get(
@@ -13,39 +13,22 @@ const MyAppointments = () => {
       );
       setAppointments(data.appointments || []);
     } catch (error) {
-      console.error(
-        "Error fetching appointments:",
-        error.response?.data?.message
-      );
+      console.error("Error fetching appointments:", error.response?.data?.message);
       setAppointments([]);
     }
   };
 
-  // 🔹 Run once to fetch appointments
   useEffect(() => {
     fetchAppointments();
   }, []);
 
-  // 🔹 Handle Stripe success redirect
+  // remove ?status=success from URL after redirect
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const session_id = params.get("session_id");
-
-    if (session_id) {
-      axios
-        .get(
-          `${import.meta.env.VITE_BACKEND_URL}/api/v1/payment/success?session_id=${session_id}`,
-          { withCredentials: true }
-        )
-        .then((res) => {
-          if (res.data) {
-            console.log("✅ Appointment saved after payment");
-            fetchAppointments(); // 🔄 refresh list immediately
-            window.history.replaceState({}, document.title, "/myappointments"); 
-            // removes ?session_id from URL
-          }
-        })
-        .catch((err) => console.error("Payment success error:", err));
+    if (params.get("status") === "success") {
+      console.log("✅ Appointment saved after payment");
+      fetchAppointments();
+      window.history.replaceState({}, document.title, "/myappointments");
     }
   }, []);
 
